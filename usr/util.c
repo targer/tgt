@@ -82,6 +82,42 @@ int chrdev_open(char *modname, char *devpath, uint8_t minor, int *fd)
 	return 0;
 }
 
+/* Returns 1 if successful or -1 on error
+ */
+int backed_qcow_open(char *filename, int oflag, libqcow_file_t *file)
+{
+	libcerror_error_t *error = NULL;
+	int result               = 0;
+	
+	if( libqcow_file_initialize(
+	     &file,
+	     &error ) != 1 )
+	{
+		libcerror_error_set(
+		 &error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_INITIALIZE_FAILED,
+		 "%s: unable to create file.",
+		 function );
+
+		return( -1 );
+	}
+#if defined( LIBCSTRING_HAVE_WIDE_SYSTEM_CHARACTER )
+	result = libqcow_file_open_wide(
+	          file,
+	          filename,
+	          oflag,
+	          &error );
+#else
+	result = libqcow_file_open(
+	          file,
+	          filename,
+	          oflag,
+	          &error );
+#endif
+	return result;
+}
+
 int backed_file_open(char *path, int oflag, uint64_t *size, uint32_t *blksize)
 {
 	int fd, err;
