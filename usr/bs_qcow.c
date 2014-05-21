@@ -77,6 +77,7 @@ static void bs_qcow_request(struct scsi_cmd *cmd)
 	const char *write_buf = NULL;
 	ret = length = 0;
 	key = asc = 0;
+	libqcow_error_t *error = NULL;
 
 	switch (cmd->scb[0])
 	{
@@ -91,7 +92,9 @@ static void bs_qcow_request(struct scsi_cmd *cmd)
 			break;
 		}
 
-		ret = pread64(fd, tmpbuf, length, offset);
+		ret = libqcow_file_read_buffer_at_offset(
+		  fd, tmpbuf, length, offset, &error
+		);
 
 		if (ret != length) {
 			set_medium_error(&result, &key, &asc);
@@ -128,7 +131,9 @@ static void bs_qcow_request(struct scsi_cmd *cmd)
 			break;
 		}
 
-		ret = pread64(fd, tmpbuf, length, offset);
+		ret = libqcow_file_read_buffer_at_offset(
+		  fd, tmpbuf, length, offset, &error
+		);
 
 		if (ret != length) {
 			set_medium_error(&result, &key, &asc);
@@ -189,8 +194,9 @@ static void bs_qcow_request(struct scsi_cmd *cmd)
 		length = scsi_get_out_length(cmd);
 		write_buf = scsi_get_out_buffer(cmd);
 write:
-		ret = pwrite64(fd, write_buf, length,
-			       offset);
+		ret = libqcow_file_write_buffer_at_offset(
+		  fd, write_buf, length, offset, &error
+		);
 		if (ret == length) {
 			struct mode_pg *pg;
 
@@ -247,7 +253,9 @@ write:
 				break;
 			}
 
-			ret = pwrite64(fd, tmpbuf, blocksize, offset);
+			ret = libqcow_file_write_buffer_at_offset(
+			  fd, tmpbuf, blocksize, offset, &error
+			);
 			if (ret != blocksize)
 				set_medium_error(&result, &key, &asc);
 
@@ -260,8 +268,9 @@ write:
 	case READ_12:
 	case READ_16:
 		length = scsi_get_in_length(cmd);
-		ret = pread64(fd, scsi_get_in_buffer(cmd), length,
-			      offset);
+		ret = libqcow_file_read_buffer_at_offset(fd, scsi_get_in_buffer(cmd),
+		  length, offset, &error);
+		);
 
 		if (ret != length)
 			set_medium_error(&result, &key, &asc);
@@ -293,7 +302,9 @@ verify:
 			break;
 		}
 
-		ret = pread64(fd, tmpbuf, length, offset);
+		ret = libqcow_file_read_buffer_at_offset(
+		  fd, tmpbuf, length, offset, &error
+		);
 
 		if (ret != length)
 			set_medium_error(&result, &key, &asc);
